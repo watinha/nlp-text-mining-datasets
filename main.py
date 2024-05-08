@@ -39,35 +39,44 @@ classifiers = [
     ('Logistic Regression', LogisticRegression(random_state=42),
         {
             'logisticregression__C': [0.1, 1, 10],
-            'logisticregression__tol': [1e-3, 1e-4, 1e-5]
+            'logisticregression__tol': [1e-3, 1e-4, 1e-5],
+            'logisticregression__class_weight': ['balanced'],
         }),
     ('Linear SVM', LinearSVC(random_state=42),
         {
             'linearsvc__C': [0.1, 1, 10],
-            'linearsvc__tol': [1e-3, 1e-4, 1e-5]
+            'linearsvc__tol': [1e-3, 1e-4, 1e-5],
+            'linearsvc__class_weight': ['balanced'],
+            'linearsvc__dual': ['auto']
         }),
     ('Random Forest', RandomForestClassifier(random_state=42),
         {
             'randomforestclassifier__n_estimators': [50, 100, 200],
             'randomforestclassifier__max_depth': [10, 20, 30],
-            'randomforestclassifier__criterion': ['gini', 'entropy']
+            'randomforestclassifier__criterion': ['gini', 'entropy'],
+            'randomforestclassifier__class_weight': ['balanced']
         }),
     ('Gradient Boosting', GradientBoostingClassifier(random_state=42),
         {
             'gradientboostingclassifier__n_estimators': [50, 100, 200],
             'gradientboostingclassifier__learning_rate': [0.01, 0.1, 1],
-            'gradientboostingclassifier__max_depth': [3, 5, 7]
+            'gradientboostingclassifier__max_depth': [3, 5, 7],
+            'gradientboostingclassifier__class_weight': ['balanced']
         }),
     ('Decision Tree', DecisionTreeClassifier(random_state=42),
         {
             'decisiontreeclassifier__max_depth': [10, 20, 30],
-            'decisiontreeclassifier__criterion': ['gini', 'entropy']
+            'decisiontreeclassifier__criterion': ['gini', 'entropy'],
+            'decisiontreeclassifier__class_weight': ['balanced']
         })
 ]
 
 for (classifier, model, parameters) in classifiers:
+    print(f"- {classifier}")
+
     pipeline = make_pipeline(
-        TfidfVectorizer(ngram_range=(1, 3)), StandardScaler(),
+        TfidfVectorizer(ngram_range=(1, 3)),
+        StandardScaler(with_mean=False, with_std=False),
         SelectKBest(), model)
 
     parameters['selectkbest__score_func'] = [chi2, f_classif]
@@ -77,5 +86,4 @@ for (classifier, model, parameters) in classifiers:
     grid_search.fit(corpus_train, y_train)
     y_pred = grid_search.predict(corpus_test)
 
-    print(f"- {classifier}")
     print(classification_report(y_test, y_pred))
