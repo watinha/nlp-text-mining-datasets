@@ -21,7 +21,7 @@ def preprocessing (corpus):
     for sentence in corpus:
         sentence = sentence.lower()
         doc = pln(sentence)
-        sentence_with_lemmas = ' '.join([word.lemma_ for word in doc if word.text not in STOP_WORDS])
+        sentence_with_lemmas = ' '.join([word.lemma_ for word in doc if not word.is_stop])
         corpus_with_lemmas.append(sentence_with_lemmas)
 
     return corpus_with_lemmas
@@ -40,13 +40,13 @@ classifiers = [
         {
             'logisticregression__C': [0.1, 1, 10],
             'logisticregression__tol': [1e-3, 1e-4, 1e-5],
-            'logisticregression__class_weight': ['balanced'],
+            'logisticregression__class_weight': [None, 'balanced'],
         }),
     ('Linear SVM', LinearSVC(random_state=42),
         {
             'linearsvc__C': [0.1, 1, 10],
             'linearsvc__tol': [1e-3, 1e-4, 1e-5],
-            'linearsvc__class_weight': ['balanced'],
+            'linearsvc__class_weight': [None, 'balanced'],
             'linearsvc__dual': ['auto']
         }),
     ('Random Forest', RandomForestClassifier(random_state=42),
@@ -54,20 +54,19 @@ classifiers = [
             'randomforestclassifier__n_estimators': [50, 100, 200],
             'randomforestclassifier__max_depth': [10, 20, 30],
             'randomforestclassifier__criterion': ['gini', 'entropy'],
-            'randomforestclassifier__class_weight': ['balanced']
+            'randomforestclassifier__class_weight': [None, 'balanced']
         }),
     ('Gradient Boosting', GradientBoostingClassifier(random_state=42),
         {
             'gradientboostingclassifier__n_estimators': [50, 100, 200],
-            'gradientboostingclassifier__learning_rate': [0.01, 0.1, 1],
+            'gradientboostingclassifier__learning_rate': [0.01, 0.1],
             'gradientboostingclassifier__max_depth': [3, 5, 7],
-            'gradientboostingclassifier__class_weight': ['balanced']
         }),
     ('Decision Tree', DecisionTreeClassifier(random_state=42),
         {
             'decisiontreeclassifier__max_depth': [10, 20, 30],
             'decisiontreeclassifier__criterion': ['gini', 'entropy'],
-            'decisiontreeclassifier__class_weight': ['balanced']
+            'decisiontreeclassifier__class_weight': [None, 'balanced']
         })
 ]
 
