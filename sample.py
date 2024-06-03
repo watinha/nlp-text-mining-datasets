@@ -25,17 +25,22 @@ seq_resampled, y_resampled = sampler.fit_resample(seq_train, y_train)
 
 seq_train_df = pd.DataFrame(seq_train)
 seq_train_list = seq_train_df.values.tolist()
+print(seq_train_df.shape)
 
 seq_resampled_df = pd.DataFrame(seq_resampled)
 seq_resampled_list = seq_resampled_df.values.tolist()
+print(seq_resampled_df.shape)
 
 indexes = []
-for index, row in enumerate(seq_train_list):
-    for row_resampled in seq_resampled_list:
+for row_resampled in seq_resampled_list:
+    for index, row in enumerate(seq_train_list):
         if str(row) == str(row_resampled):
             indexes.append(index)
             #print(f'{str(row)}: \n - {str(row_resampled)}')
             break
+
+
+print(len(indexes))
 
 (nrows,) = X_train.shape
 X_train.index = list(range(nrows))
