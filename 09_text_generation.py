@@ -78,9 +78,6 @@ y = to_categorical(labels_index)
 
 
 MAX_SEQUENCE_SIZE = 15
-NEURONS = 300
-EPOCHS = 200
-EMBEDDING_DIM = 300
 
 
 def generate_text (model, input, num_words, max_sequence_size, word_index):
@@ -89,7 +86,7 @@ def generate_text (model, input, num_words, max_sequence_size, word_index):
 
   for i in range(num_words):
     diff = max_sequence_size - len(context)
-    context = ['' for i in range(diff)] + tokens     # left padding
+    context = ['' for i in range(diff)] + context[-max_sequence_size:]     # left padding
     x_test = ' '.join(context)
 
     pred = model.predict([x_test], verbose=0)
@@ -105,6 +102,7 @@ def generate_text (model, input, num_words, max_sequence_size, word_index):
 """##Embeddings Pré-Treinados e Transfer Learning
 
 """
+EMBEDDING_DIM = 300
 
 vectors = KeyedVectors.load_word2vec_format('./embeddings/skip_s300.txt')
 
@@ -113,14 +111,14 @@ def get_vectors_and_vocab (corpus, vectors, embedding_dim):
   vocab = vectors.index_to_key
   weights_matrix = vectors.vectors
 
-  for doc in corpus:
-    tokens = set(doc.split())
+  #for doc in corpus:
+  #  tokens = set(doc.split())
 
-    for token in tokens:
-      if token not in vocab:
-        vocab.append(token)
-        new_vec = np.random.rand(embedding_dim)
-        weights_matrix = np.vstack([weights_matrix, new_vec])
+  #  for token in tokens:
+  #    if token not in vocab:
+  #      vocab.append(token)
+  #      new_vec = np.random.rand(embedding_dim)
+  #      weights_matrix = np.vstack([weights_matrix, new_vec])
 
   return (vocab, weights_matrix)
 
@@ -135,7 +133,12 @@ corpus_vocab_len = len(vectorization_layer.get_vocabulary())
 print(len(vocab))
 print(corpus_vocab_len)
 
+
+NEURONS = 300
+EPOCHS = 200
+
 embedding_layer = Embedding(len(vocab) + 2, EMBEDDING_DIM)
+embedding_layer.set_weights([weights_matrix])
 
 model = Sequential()
 model.add(vectorization_layer)
@@ -149,8 +152,6 @@ model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
-embedding_layer.set_weights([weights_matrix])
-
 model.summary()
 
 model.fit(X, y, epochs=EPOCHS, validation_split=0.1)
@@ -158,3 +159,5 @@ model.save('09_text_generation.h5')
 
 input = 'Convalidação é um procedimento'
 generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
+
+
