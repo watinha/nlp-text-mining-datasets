@@ -13,5 +13,6 @@ RUN pip install pandas
 RUN pip install gensim
 RUN pip install keras
 RUN pip install keras-nlp
+RUN pip install bs4
 
 CMD ["ash"]
