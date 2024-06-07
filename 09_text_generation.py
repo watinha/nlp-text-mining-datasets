@@ -2,7 +2,7 @@ import codecs, string, numpy as np
 
 from bs4 import BeautifulSoup
 from gensim.models import KeyedVectors
-from keras.layers import TextVectorization, Embedding, LSTM, Dense
+from keras.layers import TextVectorization, Embedding, LSTM, Dense, Input
 from keras.utils import to_categorical
 from keras.models import Sequential
 
@@ -103,50 +103,45 @@ def generate_text (model, input, num_words, max_sequence_size, word_index):
 
 """
 EMBEDDING_DIM = 300
+MAX_VOCAB_SIZE = 20000
+NEURONS = 300
+EPOCHS = 200
 
 vectors = KeyedVectors.load_word2vec_format('./embeddings/skip_s300.txt')
 
 
-def get_vectors_and_vocab (corpus, vectors, embedding_dim):
-  vocab = vectors.index_to_key
-  weights_matrix = vectors.vectors
+def get_weights_matrix (vocabulary, vectors):
+  _, embedding_dim = vectors.vectors.shape
+  weights_matrix = []
 
-  #for doc in corpus:
-  #  tokens = set(doc.split())
+  for token in vocabulary:
+    if token not in vectors:
+      weights_matrix.append(np.random.rand(embedding_dim))
+    else:
+      weights_matrix.append(vectors[token])
 
-  #  for token in tokens:
-  #    if token not in vocab:
-  #      vocab.append(token)
-  #      new_vec = np.random.rand(embedding_dim)
-  #      weights_matrix = np.vstack([weights_matrix, new_vec])
+  return np.array(weights_matrix, dtype='float32')
 
-  return (vocab, weights_matrix)
-
-
-(vocab, weights_matrix) = get_vectors_and_vocab(corpus, vectors, EMBEDDING_DIM)
 
 vectorization_layer = TextVectorization(
-    len(vocab) + 2, output_sequence_length=MAX_SEQUENCE_SIZE, # +2 para token vazio e [UNK]
-    vocabulary=vocab)
-corpus_vocab_len = len(vectorization_layer.get_vocabulary())
+    MAX_VOCAB_SIZE, output_sequence_length=MAX_SEQUENCE_SIZE,
+    standardize='lower_and_strip_punctuation')
+vectorization_layer.adapt(X)
+vocabulary = vectorization_layer.get_vocabulary()
 
-print(len(vocab))
-print(corpus_vocab_len)
+weights_matrix = get_weights_matrix(vocabulary, vectors)
 
-
-NEURONS = 300
-EPOCHS = 200
-
-embedding_layer = Embedding(len(vocab) + 2, EMBEDDING_DIM)
-embedding_layer.set_weights([weights_matrix])
+embedding_layer = Embedding(len(vocabulary), EMBEDDING_DIM)
 
 model = Sequential()
-model.add(vectorization_layer)
 model.add(embedding_layer)
 model.add(LSTM(NEURONS, return_sequences=True))
 model.add(LSTM(NEURONS))
 model.add(Dense(NEURONS, activation='relu'))
 model.add(Dense(len(word_index), activation='softmax'))
+model.build(input_shape=(None, 15))
+
+embedding_layer.set_weights([weights_matrix])
 
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
@@ -154,7 +149,8 @@ model.compile(optimizer='adam',
 
 model.summary()
 
-model.fit(X, y, epochs=EPOCHS, validation_split=0.1)
+X_seq = vectorization_layer(X)
+model.fit(X_seq, y, epochs=EPOCHS, validation_split=0.1)
 model.save('09_text_generation.h5')
 
 input = 'Convalidação é um procedimento'
