@@ -1,4 +1,4 @@
-import codecs, string, numpy as np
+import codecs, string, numpy as np, pickle
 
 from bs4 import BeautifulSoup
 from gensim.models import KeyedVectors
@@ -95,7 +95,7 @@ MAX_SEQUENCE_SIZE = window_size
 EMBEDDING_DIM = 300
 MAX_VOCAB_SIZE = 20000
 NEURONS = 300
-EPOCHS = 10
+EPOCHS = 20
 
 vectors = KeyedVectors.load_word2vec_format('./embeddings/skip_s300.txt')
 
@@ -141,46 +141,7 @@ model.compile(optimizer='adam',
 
 model.fit(X, y, epochs=EPOCHS, validation_split=0.1)
 
-model.save('09_text_generation.h5')
+model.save('09_text_generation.keras')
+pickle.dump(word_index, open('09_text_generation_word_index.pkl', 'wb'))
 
 
-def generate_text (model, input, num_words, max_sequence_size, word_index, vectorization_layer):
-  outcomes = []
-
-  generated_words = []
-  context = input.split()
-
-  diff = max_sequence_size - len(context)
-  initial_context = ['' for i in range(diff)] + context[-max_sequence_size:]
-  x_test = ' '.join(initial_context)
-
-  pred = model.predict(np.array([x_test], dtype="object"), verbose=0)
-  most_probable = [ word_index[i] for i in np.argsort(pred[0])[-5:] ]
-
-  print(input)
-
-  for next in most_probable:
-    generated_words = [next]
-    context = initial_context[1:]
-    context.append(next)
-
-    for i in range(num_words):
-      x_test = ' '.join(context)
-
-      pred = model.predict(np.array([x_test], dtype="object"), verbose=-1)
-      next_word = word_index[np.argmax(pred[0])]
-      generated_words.append(next_word)
-      context = context[1:]
-      context.append(next_word)
-
-    print(' - ' + ' '.join(generated_words))
-
-
-input = 'Convalidação é um procedimento que pode ser utilizado para'
-generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
-print('---')
-input = 'Atividades Complementares podem ser realizadas em'
-generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
-print('---')
-input = 'O TCC deve ser orientado por um professor'
-generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
