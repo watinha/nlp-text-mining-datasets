@@ -43,15 +43,15 @@ def generate_text (model, input, num_words, max_sequence_size, word_index):
 print('---')
 print('--- GENERATING TEXT ---')
 print('---')
-print('---')
+print('')
 
-input = 'Convalidação é um procedimento que pode ser utilizado para'
-generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
-print('---')
-input = 'Atividades Complementares podem ser realizadas em'
-generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
-print('---')
-input = 'O TCC deve ser orientado por um professor'
-generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
+inputs = [
+    'Convalidação é um procedimento que pode ser utilizado para',
+    'Atividades Complementares podem ser realizadas em',
+    'O TCC deve ser orientado por um professor'
+]
 
+for input in inputs:
+    generate_text(model, input, 20, MAX_SEQUENCE_SIZE, word_index)
+    print('---')
 
