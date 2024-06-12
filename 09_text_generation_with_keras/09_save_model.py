@@ -28,12 +28,12 @@ for url in urls:
 corpus = []
 
 for filename in filenames:
-  with codecs.open(f'./regulamentos/{filename}', encoding='cp1252') as f:
+  with codecs.open(f'../regulamentos/{filename}', encoding='cp1252') as f:
     html = f.read()
     soup = BeautifulSoup(html, features='html.parser')
-    doc = soup.get_text()
-    pos = doc.find('ANEXO')   # removing preamble
-    corpus.append(doc[pos:])
+    ps = soup.find_all('p', class_='Texto_Justificado')
+    for p in ps:
+      corpus.append(p.get_text().lower())
 
 
 """##Construção do Dataset"""
@@ -97,7 +97,7 @@ MAX_VOCAB_SIZE = 20000
 NEURONS = 300
 EPOCHS = 20
 
-vectors = KeyedVectors.load_word2vec_format('./embeddings/skip_s300.txt')
+vectors = KeyedVectors.load_word2vec_format('../embeddings/skip_s300.txt')
 
 
 def get_weights_matrix (vocabulary, vectors):
