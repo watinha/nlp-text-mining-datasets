@@ -14,5 +14,7 @@ RUN pip install gensim
 RUN pip install keras
 RUN pip install keras-nlp
 RUN pip install bs4
+RUN pip install transformers
+RUN pip install tf-keras
 
 CMD ["ash"]
