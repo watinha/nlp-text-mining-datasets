@@ -5,6 +5,7 @@ from gensim.models import KeyedVectors
 from keras.layers import TextVectorization, Embedding, LSTM, Dense, Input
 from keras.utils import to_categorical
 from keras.models import Sequential
+from keras.optimizers import Adam
 
 
 urls = [
@@ -54,21 +55,21 @@ def clean(doc):
 
 corpus = [ clean(doc) for doc in corpus ]
 
-window_size = 50
+window_size = 20
 
 X = []
 labels = []
 
 for doc in corpus:
   tokens = doc.split()
-  for i in range(window_size, len(tokens)-1):
-    context = tokens[i-window_size:i]
+  for i in range(0, len(tokens)-1):
+    context = tokens[max(i-window_size, 0):i]
     label = tokens[i]
 
     X.append(' '.join(context))
     labels.append(label)
 
-    for j in range(window_size-45):
+    for j in range(max(len(context) - 15, 0)):
       context[j] = ''
       X.append(' '.join(context))
       labels.append(label)
@@ -135,7 +136,7 @@ model.summary()
 
 embedding_layer.set_weights([weights_matrix])
 
-model.compile(optimizer='adam',
+model.compile(optimizer=Adam(),
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
