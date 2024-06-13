@@ -55,7 +55,7 @@ def clean(doc):
 
 corpus = [ clean(doc) for doc in corpus ]
 
-window_size = 20
+window_size = 30
 
 X = []
 labels = []
