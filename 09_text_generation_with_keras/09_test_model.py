@@ -48,7 +48,11 @@ print('')
 inputs = [
     'Convalidação é um procedimento que pode ser utilizado para',
     'Atividades Complementares podem ser realizadas em',
-    'O TCC deve ser orientado por um professor'
+    'O TCC deve ser orientado por um professor',
+    'O coeficiente é utilizado para determinar se o aluno',
+    'Trabalho de Conclusão de Curso pode ser realizado no período',
+    'O período de trancamento de matrícula é de',
+    'Disciplinas optativas podem ser realizadas no momento em que',
 ]
 
 for input in inputs:

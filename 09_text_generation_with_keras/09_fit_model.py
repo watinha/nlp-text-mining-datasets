@@ -1,8 +1,8 @@
-import codecs, string, numpy as np, pickle
+import codecs, string, numpy as np, pickle, spacy, re
 
 from bs4 import BeautifulSoup
 from gensim.models import KeyedVectors
-from keras.layers import TextVectorization, Embedding, LSTM, Dense, Input
+from keras.layers import TextVectorization, Embedding, LSTM, Dense, Input, Dropout
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.optimizers import Adam
@@ -33,8 +33,10 @@ for filename in filenames:
     html = f.read()
     soup = BeautifulSoup(html, features='html.parser')
     ps = soup.find_all('p', class_='Texto_Justificado')
+    doc = ''
     for p in ps:
-      corpus.append(p.get_text().lower())
+      doc += p.get_text().lower()
+    corpus.append(doc)
 
 
 """##Construção do Dataset"""
@@ -42,12 +44,14 @@ for filename in filenames:
 
 def clean(doc):
   words = doc.split()
-  table = doc.maketrans('', '', '!"#$%&\'()*+,-:;<=>?@[\\]^_`{|}~')
+  chars_to_replace = '!"#$%&\'()*+,-:;<=>?@[\\]^_`{|}~'
+  table = doc.maketrans(chars_to_replace, ' ' * len(chars_to_replace))
   cleaned_words = [w.translate(table) for w in words]
   cleaned_doc = ' '.join(cleaned_words)
   cleaned_doc = cleaned_doc.replace(u'\xa0', u' ')
   cleaned_doc = cleaned_doc.replace(u'\u200b', u' ')
   cleaned_doc = cleaned_doc.replace(u'\n', u' ')
+  cleaned_doc = re.sub(r'\s+', ' ', cleaned_doc)
   cleaned_doc = cleaned_doc.lower()
 
   return cleaned_doc
@@ -60,8 +64,12 @@ window_size = 30
 X = []
 labels = []
 
-for doc in corpus:
-  tokens = doc.split()
+pln = spacy.load('pt_core_news_sm')
+
+for text in corpus:
+  doc = list(pln(text))
+  tokens = [token.text for token in doc]
+
   for i in range(0, len(tokens)-1):
     context = tokens[max(i-window_size, 0):i]
     label = tokens[i]
@@ -96,7 +104,7 @@ MAX_SEQUENCE_SIZE = window_size
 EMBEDDING_DIM = 300
 MAX_VOCAB_SIZE = 20000
 NEURONS = 300
-EPOCHS = 20
+EPOCHS = 50
 
 vectors = KeyedVectors.load_word2vec_format('../embeddings/skip_s300.txt')
 
@@ -127,14 +135,16 @@ model = Sequential()
 model.add(Input(shape=(1,), dtype='string'))
 model.add(vectorization_layer)
 model.add(embedding_layer)
-model.add(LSTM(NEURONS, return_sequences=True))
-model.add(LSTM(NEURONS))
+model.add(LSTM(NEURONS, return_sequences=True, dropout=0.2))
+model.add(LSTM(NEURONS, dropout=0.2))
 model.add(Dense(NEURONS, activation='relu'))
+model.add(Dropout(0.2))
 model.add(Dense(len(word_index), activation='softmax'))
 model.build(input_shape=(None, 1))
 model.summary()
 
 embedding_layer.set_weights([weights_matrix])
+embedding_layer.trainable = False
 
 model.compile(optimizer=Adam(),
               loss='categorical_crossentropy',
