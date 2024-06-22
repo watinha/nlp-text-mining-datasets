@@ -1,11 +1,15 @@
-import pickle, numpy as np
+import pickle, numpy as np, sys
 
 from keras.models import load_model
 
-MAX_SEQUENCE_SIZE = 50
+_, window_size, dropout = sys.argv
 
-model = load_model('./09_text_generation.keras')
-word_index = pickle.load(open('./09_text_generation_word_index.pkl', 'rb'))
+MAX_SEQUENCE_SIZE = int(window_size)
+DROPOUT = float(dropout)
+
+
+model = load_model(f'./09_text_generation-{MAX_SEQUENCE_SIZE}-{DROPOUT}.keras')
+word_index = pickle.load(open(f'./09_text_generation_word_index-{MAX_SEQUENCE_SIZE}-{DROPOUT}.pkl', 'rb'))
 
 
 def generate_text (model, input, num_words, max_sequence_size, word_index):

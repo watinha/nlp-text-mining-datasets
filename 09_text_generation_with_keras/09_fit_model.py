@@ -1,4 +1,4 @@
-import codecs, string, numpy as np, pickle, spacy, re
+import codecs, string, numpy as np, pickle, spacy, re, sys
 
 from bs4 import BeautifulSoup
 from gensim.models import KeyedVectors
@@ -6,6 +6,18 @@ from keras.layers import TextVectorization, Embedding, LSTM, Dense, Input, Dropo
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.optimizers import Adam
+
+
+_, window_size, dropout = sys.argv
+
+window_size = int(window_size)
+MAX_SEQUENCE_SIZE = window_size
+EMBEDDING_DIM = 300
+MAX_VOCAB_SIZE = 20000
+NEURONS = 300
+EPOCHS = 50
+WINDOW_SCALING = 5
+DROPOUT = float(dropout)
 
 
 urls = [
@@ -32,11 +44,17 @@ for filename in filenames:
   with codecs.open(f'../regulamentos/{filename}', encoding='cp1252') as f:
     html = f.read()
     soup = BeautifulSoup(html, features='html.parser')
-    ps = soup.find_all('p', class_='Texto_Justificado')
-    doc = ''
+
+    ps = soup.select('div[unselectable=on] ~ p')
+    article = ''
+
     for p in ps:
-      doc += p.get_text().lower()
-    corpus.append(doc)
+      if p.get_text().lower().startswith('art.'):
+        article = p.get_text()
+        corpus.append(article)
+      else:
+        paragraph = p.get_text()
+        corpus.append(f'{article} {paragraph}')
 
 
 """##Construção do Dataset"""
@@ -59,7 +77,6 @@ def clean(doc):
 
 corpus = [ clean(doc) for doc in corpus ]
 
-window_size = 30
 
 X = []
 labels = []
@@ -70,17 +87,18 @@ for text in corpus:
   doc = list(pln(text))
   tokens = [token.text for token in doc]
 
-  for i in range(0, len(tokens)-1):
-    context = tokens[max(i-window_size, 0):i]
+  for i in range(window_size, len(tokens)):
+    context = tokens[i-window_size:i]
     label = tokens[i]
 
     X.append(' '.join(context))
     labels.append(label)
 
-    for j in range(max(len(context) - 15, 0)):
-      context[j] = ''
-      X.append(' '.join(context))
-      labels.append(label)
+    for j in range(WINDOW_SCALING):
+      if j < len(context):
+          context[j] = 'UNK'
+          X.append(' '.join(context))
+          labels.append(label)
 
 
 X = np.array(X, dtype="object")
@@ -95,16 +113,9 @@ y = to_categorical(labels_index)
 print(f'y shape: {y.shape}')
 
 
-MAX_SEQUENCE_SIZE = window_size
-
-
 """##Embeddings Pré-Treinados e Transfer Learning
 
 """
-EMBEDDING_DIM = 300
-MAX_VOCAB_SIZE = 20000
-NEURONS = 300
-EPOCHS = 50
 
 vectors = KeyedVectors.load_word2vec_format('../embeddings/skip_s300.txt')
 
@@ -135,10 +146,10 @@ model = Sequential()
 model.add(Input(shape=(1,), dtype='string'))
 model.add(vectorization_layer)
 model.add(embedding_layer)
-model.add(LSTM(NEURONS, return_sequences=True, dropout=0.2))
-model.add(LSTM(NEURONS, dropout=0.2))
+model.add(LSTM(NEURONS, return_sequences=True, dropout=DROPOUT))
+model.add(LSTM(NEURONS, dropout=DROPOUT))
 model.add(Dense(NEURONS, activation='relu'))
-model.add(Dropout(0.2))
+model.add(Dropout(DROPOUT))
 model.add(Dense(len(word_index), activation='softmax'))
 model.build(input_shape=(None, 1))
 model.summary()
@@ -152,7 +163,7 @@ model.compile(optimizer=Adam(),
 
 model.fit(X, y, epochs=EPOCHS, validation_split=0.1)
 
-model.save('09_text_generation.keras')
-pickle.dump(word_index, open('09_text_generation_word_index.pkl', 'wb'))
+model.save(f'09_text_generation-{window_size}-{DROPOUT}.keras')
+pickle.dump(word_index, open(f'09_text_generation_word_index-{window_size}-{DROPOUT}.pkl', 'wb'))
 
 
